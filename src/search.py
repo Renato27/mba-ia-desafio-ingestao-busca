@@ -1,3 +1,11 @@
+import os
+from dotenv import load_dotenv
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_postgres import PGVector
+
+load_dotenv()
+
 PROMPT_TEMPLATE = """
 CONTEXTO:
 {contexto}
@@ -25,5 +33,25 @@ PERGUNTA DO USUÁRIO:
 RESPONDA A "PERGUNTA DO USUÁRIO"
 """
 
+def search_vector_store(query: str):
+    embeddings = OpenAIEmbeddings(model=os.getenv("OPENAI_EMBEDDING_MODEL"))
+    store = PGVector(
+        embeddings=embeddings,
+        connection=os.getenv("DATABASE_URL"), 
+        collection_name=os.getenv("PG_VECTOR_COLLECTION_NAME"),
+        use_jsonb=True
+    )
+    
+    return store.similarity_search_with_score(query, k=10)  
+
 def search_prompt(question=None):
-    pass
+  resultados = search_vector_store(question)
+  context = "\n\n".join(doc.page_content for doc, score in resultados)
+  
+  prompt_template = PromptTemplate.from_template(PROMPT_TEMPLATE)
+  prompt = prompt_template.invoke({"contexto": context, "pergunta": question})
+  
+  llm = ChatOpenAI(model=os.getenv("OPENAI_MODEL"), temperature=0.9)
+
+  return llm.invoke(prompt).content
+  

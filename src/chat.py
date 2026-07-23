@@ -1,13 +1,19 @@
 from search import search_prompt
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def main():
-    chain = search_prompt()
+    print("Faça sua pergunta (ou 'sair' para encerrar).")
+    while True:
+        pergunta = input("PERGUNTA: ").strip()
+        if pergunta.lower() in ("sair", "exit", "quit"):
+            break
+        if not pergunta:
+            continue
 
-    if not chain:
-        print("Não foi possível iniciar o chat. Verifique os erros de inicialização.")
-        return
-    
-    pass
+        resposta = search_prompt(pergunta)
+        print(f"RESPOSTA: {resposta}\n")
 
 if __name__ == "__main__":
     main()
